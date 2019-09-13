@@ -12,10 +12,10 @@ type Entity struct {
 	Tags []string
 }
 
-//MatchResult best entities returned along with score
-type MatchResult struct {
-	MatchedEntity Entity
-	Score         int
+//EntityScore best entities returned along with score
+type EntityScore struct {
+	ScoredEntity Entity
+	Score        int
 }
 
 //Training will offer selections, register selections and perform predictions
@@ -25,10 +25,10 @@ type Training struct {
 }
 
 //NewTraining Creates a new training context
-func NewTraining(ent []Entity) Training {
+func NewTraining(entities []Entity) Training {
 	ment := make(map[string]Entity)
 	stc := make(map[string]int)
-	for _, ent := range ent {
+	for _, ent := range entities {
 		ment[ent.Name] = ent
 		for _, tag := range ent.Tags {
 			stc[tag] = 0
@@ -38,21 +38,24 @@ func NewTraining(ent []Entity) Training {
 }
 
 //BestMatches get entities that are closest to the selected entities during training
-func (t *Training) BestMatches(minScore int) []MatchResult {
+func (t *Training) BestMatches(minScore int) []EntityScore {
+	return t.calculateScores(minScore, t.computeBestTagPoints())
+}
+
+func (t *Training) calculateScores(minScore int, tagPoints map[string]int) []EntityScore {
 	//calculate the score of how well each entity is fit
 	//to the training tag counters
-	entityScores := make([]MatchResult, 0)
+	entityScores := make([]EntityScore, 0)
 	for _, ent := range t.Entities {
 
 		//calculate entity score based on its tag points
-		tagPoints := t.computeTagPoints()
 		score := 0
 		for _, entityTag := range ent.Tags {
 			score += tagPoints[entityTag]
 		}
 
 		if score >= minScore {
-			mr := MatchResult{MatchedEntity: ent, Score: score}
+			mr := EntityScore{ScoredEntity: ent, Score: score}
 			entityScores = append(entityScores, mr)
 		}
 	}
@@ -65,7 +68,7 @@ func (t *Training) BestMatches(minScore int) []MatchResult {
 
 //compute tag points based on each tag's order of importance
 //according to the tag counter
-func (t *Training) computeTagPoints() map[string]int {
+func (t *Training) computeBestTagPoints() map[string]int {
 
 	//calculate the order of relevance of each tag counter
 	tagCounters := make([]int, 0)
@@ -105,9 +108,28 @@ func (t *Training) computeTagPoints() map[string]int {
 }
 
 //NextCandidates get the next candidates that will be used in selection
-func (t *Training) NextCandidates(qtty int) []Entity {
-	//TODO
-	return []Entity{}
+func (t *Training) NextCandidates(qtty int) ([]Entity, error) {
+	if qtty < 2 {
+		return []Entity{}, fmt.Errorf("qtty must be >= 2")
+	}
+	//determine which candidates will help increase or decrease training
+	//quality because they have tags that are still close to zero in training
+
+	nearZeroTagPoints := make(map[string]int)
+	for selectedTag, selectedCounter := range t.SelectedTagCounters {
+		nearZeroTagPoints[selectedTag] = -selectedCounter
+	}
+
+	ent := t.calculateScores(-9999, nearZeroTagPoints)
+
+	result := make([]Entity, 0)
+	for i, es := range ent {
+		if i > qtty {
+			break
+		}
+		result = append(result, es.ScoredEntity)
+	}
+	return result, nil
 }
 
 //Select Tell which entities were selected and which weren't so that we learn
