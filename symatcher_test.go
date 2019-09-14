@@ -39,19 +39,24 @@ func TestBasic(t *testing.T) {
 	assert.Equal(t, 4, es[0].Score)
 	// fmt.Printf("%v\n", es)
 
-	candidates := training.NextCandidates(2)
-	fmt.Printf("CANDIDATES 111 %v\n", candidates)
-	training.Select([]string{candidates[0].Name}, []string{entities[1].Name})
-	fmt.Printf("TAG COUNTERS 111 %v\n", tagCounters)
-	// es = training.BestMatches(-99999)
-	// fmt.Printf("%v\n", es)
+	// candidates := training.NextCandidates(2)
+	// fmt.Printf("CANDIDATES 111 %v\n", candidates)
+	// training.Select([]string{candidates[0].Name}, []string{candidates[1].Name})
+	// fmt.Printf("TAG COUNTERS 111 %v\n", tagCounters)
+	// // es = training.BestMatches(-99999)
+	// // fmt.Printf("%v\n", es)
 
-	candidates = training.NextCandidates(2)
-	fmt.Printf("CANDIDATES 222 %v\n", candidates)
-	training.Select([]string{candidates[1].Name}, []string{entities[0].Name})
-	fmt.Printf("TAG COUNTERS 222 %v\n", tagCounters)
-	es = training.BestMatches(-99999)
-	fmt.Printf("BEST 222 %v\n", es)
+	// candidates = training.NextCandidates(2)
+	// fmt.Printf("CANDIDATES 222 %v\n", candidates)
+	// training.Select([]string{candidates[0].Name}, []string{candidates[1].Name})
+	// fmt.Printf("TAG COUNTERS 222 %v\n", tagCounters)
+
+	// candidates = training.NextCandidates(2)
+	// fmt.Printf("CANDIDATES 333 %v\n", candidates)
+	// training.Select([]string{candidates[0].Name}, []string{candidates[1].Name})
+	// fmt.Printf("TAG COUNTERS 333 %v\n", tagCounters)
+	// // es = training.BestMatches(-99999)
+	// // fmt.Printf("BEST 222 %v\n", es)
 
 }
 
