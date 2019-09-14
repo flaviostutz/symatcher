@@ -61,7 +61,7 @@ func (t *Training) calculateScores(minScore int, tagPoints map[string]int) []Ent
 	}
 	//order results
 	sort.Slice(entityScores, func(i, j int) bool {
-		return entityScores[i].Score < entityScores[j].Score
+		return entityScores[i].Score > entityScores[j].Score
 	})
 	return entityScores
 }
@@ -84,8 +84,7 @@ func (t *Training) computeBestTagPoints() map[string]int {
 	}
 	//decrescent order
 	sort.Slice(tagCounters, func(i, j int) bool {
-		//TODO VALIDATE ORDER HERE
-		return tagCounters[i] < tagCounters[j]
+		return tagCounters[i] > tagCounters[j]
 	})
 
 	tagPoints := make(map[string]int)
@@ -108,13 +107,10 @@ func (t *Training) computeBestTagPoints() map[string]int {
 }
 
 //NextCandidates get the next candidates that will be used in selection
-func (t *Training) NextCandidates(qtty int) ([]Entity, error) {
-	if qtty < 2 {
-		return []Entity{}, fmt.Errorf("qtty must be >= 2")
-	}
-	//determine which candidates will help increase or decrease training
-	//quality because they have tags that are still close to zero in training
-
+func (t *Training) NextCandidates(qtty int) []Entity {
+	//get candidates based on how its attributes have zero counter in training
+	//so that those attributes will be evaluated when those candidates are selected
+	//and training will get stronger
 	nearZeroTagPoints := make(map[string]int)
 	for selectedTag, selectedCounter := range t.SelectedTagCounters {
 		nearZeroTagPoints[selectedTag] = -selectedCounter
@@ -124,12 +120,12 @@ func (t *Training) NextCandidates(qtty int) ([]Entity, error) {
 
 	result := make([]Entity, 0)
 	for i, es := range ent {
-		if i > qtty {
+		if i >= qtty {
 			break
 		}
 		result = append(result, es.ScoredEntity)
 	}
-	return result, nil
+	return result
 }
 
 //Select Tell which entities were selected and which weren't so that we learn
