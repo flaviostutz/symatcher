@@ -2,6 +2,8 @@ package symatcher
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"sort"
 )
 
@@ -40,6 +42,17 @@ func NewTraining(entities []Entity) Training {
 //BestMatches get entities that are closest to the selected entities during training
 func (t *Training) BestMatches(minScore int) []EntityScore {
 	return t.calculateScores(minScore, t.computeBestTagPoints())
+}
+
+//DiscriminationLevel calculates the difference between the [average score from N best elements]
+//and [average score of remaining matches]
+func (t *Training) DiscriminationLevel(bestMatchesCount int) int {
+	bm := t.BestMatches(-99999)
+	bm1 := bm[:bestMatchesCount]
+	bm2 := bm[bestMatchesCount+1:]
+	as1 := averageScore(bm1)
+	as2 := averageScore(bm2)
+	return as1 - as2
 }
 
 func (t *Training) calculateScores(minScore int, tagPoints map[string]int) []EntityScore {
@@ -107,7 +120,7 @@ func (t *Training) computeBestTagPoints() map[string]int {
 }
 
 //NextCandidates get the next candidates that will be used in selection
-func (t *Training) NextCandidates(qtty int) []Entity {
+func (t *Training) NextCandidates(qtty int, randomRange int) []Entity {
 	//get candidates based on how its attributes have zero counter in training
 	//so that those attributes will be evaluated when those candidates are selected
 	//and training will get stronger
@@ -116,16 +129,30 @@ func (t *Training) NextCandidates(qtty int) []Entity {
 		nearZeroTagPoints[selectedTag] = -selectedCounter
 	}
 
+	//get entities whose tags are near zero point in training
 	ent := t.calculateScores(-9999, nearZeroTagPoints)
 
-	result := make([]Entity, 0)
+	r1 := make([]Entity, 0)
 	for i, es := range ent {
-		if i >= qtty {
+		if i >= randomRange {
 			break
 		}
-		result = append(result, es.ScoredEntity)
+		r1 = append(r1, es.ScoredEntity)
 	}
-	return result
+
+	if len(r1) < qtty {
+		return r1
+	}
+
+	//get randomized elements to diversify training
+	rnd := rand.New(rand.NewSource(1))
+	resultIndexes := rnd.Perm(len(r1))
+
+	r2 := make([]Entity, 0)
+	for _, v := range resultIndexes[:qtty] {
+		r2 = append(r2, r1[v])
+	}
+	return r2
 }
 
 //Select Tell which entities were selected and which weren't so that we learn
@@ -152,4 +179,12 @@ func (t *Training) countTags(entityNames []string, increment int) error {
 		}
 	}
 	return nil
+}
+
+func averageScore(entities []EntityScore) int {
+	tv := 0
+	for _, en := range entities {
+		tv += en.Score
+	}
+	return int(math.Floor(float64(tv) / float64(len(entities))))
 }
